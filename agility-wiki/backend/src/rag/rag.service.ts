@@ -25,7 +25,6 @@ export class RagService {
     });
   }
 
-  private openai: OpenAI;
   private pinecone: Pinecone;
   private index: any;
 

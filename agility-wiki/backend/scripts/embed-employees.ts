@@ -6,7 +6,7 @@ import { Pinecone } from "@pinecone-database/pinecone";
 const prisma = new PrismaClient();
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: process.env.OPENAI_API_KEY_SCRIPT!,
 });
 
 const pinecone = new Pinecone({
@@ -80,6 +80,7 @@ async function main() {
               team: emp.team?.name ?? "Not assigned",
               job_title: emp?.job_title ?? "Not assigned",
               responsibilities: emp.team?.description ?? "",
+              team_code: emp.team?.code ?? "Not assigned",
               work_locations: emp.work_location,
               phone: emp.phone,
               status: emp.status ?? 'Unknow',

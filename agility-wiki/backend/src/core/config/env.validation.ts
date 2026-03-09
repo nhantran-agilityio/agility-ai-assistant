@@ -9,7 +9,7 @@ class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
-  OPENAI_API_KEY: string;
+  OPENAI_API_KEY_SCRIPT: string;
 
   @IsString()
   @IsNotEmpty()
