@@ -30,9 +30,6 @@ export class RagService {
   private index: any;
 
   constructor(private prisma: PrismaService) {
-    // this.openai = new OpenAI({
-    //   apiKey: process.env.OPENAI_API_KEY!,
-    // });
 
     this.pinecone = new Pinecone({
       apiKey: process.env.PINECONE_API_KEY!,
