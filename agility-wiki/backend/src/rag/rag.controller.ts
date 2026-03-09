@@ -15,7 +15,14 @@ export class RagController {
   @Post()
   @ApiOperation({ summary: "Ask chatbot" })
   async chat(@Body() body: ChatRequestDto) {
-    return this.ragService.ask(body.message, body.apiKey);
+    const answer = await this.ragService.ask(
+      body.message,
+      body.apiKey
+    );
+
+    return {
+      text: answer
+    };
   }
 
   @Get("suggestions")

@@ -6,7 +6,6 @@ import { validate } from './core/config/env.validation';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { ChatModule } from './chat/chat.module';
 import { RagModule } from './rag/rag.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -18,7 +17,6 @@ import { PrismaModule } from './prisma/prisma.module';
     }),
     PrismaModule,
     AuthModule,
-    ChatModule,
     RagModule,
   ],
   controllers: [AppController],
