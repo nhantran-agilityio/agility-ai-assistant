@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+
 
 import ChatIcon from "./icons/chat-icon";
 import {
@@ -14,6 +15,9 @@ import { TypingIndicator } from "./TypingIndicator";
 import { Textarea } from "./TextArea";
 import { cn } from "../lib/utils";
 import { Button } from "./Button";
+import Suggestions from "./Suggestions";
+import { chatService } from "../services/chat.service";
+import { useOpenAIKey } from "../app/providers/provider";
 
 type ChatMessage = {
     id: string;
@@ -27,47 +31,90 @@ export default function ChatbotPopup() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [controller, setController] = useState<AbortController | null>(null);
+    const [needHuman, setNeedHuman] = useState(false);
+    const { apiKey = '' } = useOpenAIKey();
 
-    const handleSend = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!input.trim()) return;
+    useEffect(() => {
+        if (!open) return;
+
+        chatService.getSuggestions().then((data) => {
+            setSuggestions(data.suggestions || []);
+        });
+    }, [open]);
+
+    useEffect(() => {
+        const el = document.querySelector("#chat-end");
+        el?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
+
+    const sendMessage = async (text: string) => {
+        const abort = new AbortController();
+        setController(abort);
 
         const userMessage: ChatMessage = {
             id: crypto.randomUUID(),
             role: "user",
-            text: input,
+            text,
         };
 
         setMessages((prev) => [...prev, userMessage]);
-        setInput("");
         setLoading(true);
         setError(null);
 
         try {
-            const res = await fetch("http://localhost:3000/chat", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    message: userMessage.text,
-                }),
-            });
+            if (!apiKey) {
+                setError("OpenAI API key is required");
+                return;
+            }
 
-            const data = await res.json();
+            const data = await chatService.ask(text, abort.signal, apiKey);
 
             const aiMessage: ChatMessage = {
                 id: crypto.randomUUID(),
                 role: "assistant",
-                text: data.text,
+                text: data.text || "",
             };
 
             setMessages((prev) => [...prev, aiMessage]);
+
+            // Detect AI fail
+            if (
+                data.text?.toLowerCase().includes("don't know") ||
+                data.text?.toLowerCase().includes("not found")
+            ) {
+                setNeedHuman(true);
+            }
+
         } catch (err: any) {
+
+            if (err.name === "AbortError") {
+                console.log("Request cancelled");
+                return;
+            }
+
             setError(err.message);
+            setNeedHuman(true);
+
         } finally {
             setLoading(false);
+            setController(null);
         }
+    };
+
+    const handleSend = async (e: { preventDefault: () => void; }) => {
+        e.preventDefault();
+        if (!input.trim()) return;
+
+        const text = input;
+        setInput("");
+
+        sendMessage(text);
+    };
+
+    const handleSuggestionClick = async (text: string) => {
+        await sendMessage(text);
     };
 
     return (
@@ -99,7 +146,12 @@ export default function ChatbotPopup() {
                     <div className="flex-1 relative overflow-hidden">
                         <Conversation className="h-full">
                             <ConversationContent>
-
+                                {messages.length === 0 && suggestions.length > 0 && (
+                                    <Suggestions
+                                        suggestions={suggestions}
+                                        onSelect={handleSuggestionClick}
+                                    />
+                                )}
                                 {messages.map((message) => (
                                     <Fragment key={message.id}>
                                         <Message from={message.role}>
@@ -142,10 +194,16 @@ export default function ChatbotPopup() {
                             />
 
                             <Button
-                                type="submit"
-                                disabled={!input.trim() || loading}
+                                type={loading ? "button" : "submit"}
+                                onClick={() => {
+                                    if (loading && controller) {
+                                        controller.abort();
+                                        setLoading(false);
+                                    }
+                                }}
+                                disabled={!input.trim() && !loading}
                             >
-                                {loading ? "..." : "Send"}
+                                {loading ? "Stop" : "Send"}
                             </Button>
                         </div>
                     </form>

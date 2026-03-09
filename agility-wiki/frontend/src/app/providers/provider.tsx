@@ -24,14 +24,17 @@ export function OpenAIKeyProvider({
     children: React.ReactNode;
 }) {
     const [apiKey, setApiKeyState] = useState<string | null>(null);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
 
     const clearError = () => setError(null);
 
     useEffect(() => {
-        const saved = localStorage.getItem("OPENAI_API_KEY");
-        if (saved) setApiKeyState(saved);
+        const key = localStorage.getItem("OPENAI_API_KEY");
+        if (key) setApiKeyState(key);
+        setMounted(true);
     }, []);
 
     const isValidFormat = (key: string) => {
@@ -77,7 +80,7 @@ export function OpenAIKeyProvider({
             setLoading(false);
         }
     };
-
+    if (!mounted) return null;
     return (
         <OpenAIKeyContext.Provider
             value={{ apiKey, setApiKey, loading, error, clearError }}

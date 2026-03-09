@@ -31,6 +31,7 @@ export function ApiKeyModal() {
 
         // Clear error when user input again
         clearError();
+        setLocalError(null);
     };
 
     return (

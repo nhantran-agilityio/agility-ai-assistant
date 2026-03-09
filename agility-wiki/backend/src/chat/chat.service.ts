@@ -6,7 +6,7 @@ import { RagService } from '../rag/rag.service';
 export class ChatService {
   constructor(private readonly ragService: RagService) {}
 
-  async chat(message: string) {
-    return this.ragService.ask(message);
+  async chat(message: string, apiKey: string) {
+    return this.ragService.ask(message, apiKey);
   }
 }

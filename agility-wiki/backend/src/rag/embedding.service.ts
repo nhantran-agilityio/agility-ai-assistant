@@ -150,10 +150,4 @@ export class EmbeddingService {
 
     this.logger.log('🎉 All employees embedded successfully!');
   }
-
-  // 🔹 Delete vector (optional)
-  async deleteEmbedding(employeeId: string) {
-    await this.index.deleteOne(employeeId);
-    this.logger.log(`🗑 Deleted embedding for employee ${employeeId}`);
-  }
 }

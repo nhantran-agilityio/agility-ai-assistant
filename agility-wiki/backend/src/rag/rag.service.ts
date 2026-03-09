@@ -6,31 +6,33 @@ import { PrismaService } from "src/prisma/prisma.service";
 interface EmployeeContext {
   name: string;
   email?: string;
-  team_code?: string;
-  team?: {
-    name: string,
-    code: string,
-    description?: string
-  };
-  status?: string;
-  room?: string;
   job_title?: string;
   phone?: string;
-  responsibilities?: string;
+  room?: string;
+  team_code?: string;
+  team?: {
+    name: string;
+    description?: string;
+  };
 }
 
 @Injectable()
 export class RagService {
   private readonly logger = new Logger(RagService.name);
+  private getOpenAI(apiKey: string) {
+    return new OpenAI({
+      apiKey,
+    });
+  }
 
   private openai: OpenAI;
   private pinecone: Pinecone;
   private index: any;
 
   constructor(private prisma: PrismaService) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY!,
-    });
+    // this.openai = new OpenAI({
+    //   apiKey: process.env.OPENAI_API_KEY!,
+    // });
 
     this.pinecone = new Pinecone({
       apiKey: process.env.PINECONE_API_KEY!,
@@ -42,222 +44,237 @@ export class RagService {
   }
 
   // =========================
-  // QUERY HELPERS
-  // =========================
-
-  private extractNameQuery(query: string) {
-    const match =
-      query.match(/tell me about (.+)/i) ||
-      query.match(/who is (.+)/i);
-
-    return match ? match[1].trim() : null;
-  }
-
-  private extractTeamQuery(query: string) {
-    const match = query.match(/who works in (.+) team/i);
-    return match ? match[1].trim() : null;
-  }
-
-  // =========================
   // EMBEDDING
   // =========================
 
-  private async embedQuery(query: string) {
-    const response = await this.openai.embeddings.create({
+  private async embedQuery(query: string, apiKey: string) {
+    const openai = this.getOpenAI(apiKey)
+    const res = await openai.embeddings.create({
       model: "text-embedding-3-small",
       input: query,
     });
 
-    return response.data[0].embedding;
+    return res.data[0].embedding;
   }
 
   // =========================
-  // VECTOR SEARCH
+  // QUERY PLANNER 
   // =========================
 
-  private async vectorSearch(query: string): Promise<EmployeeContext[]> {
-    const vector = await this.embedQuery(query);
+  private async planQuery(question: string, apiKey) {
+    const openai = this.getOpenAI(apiKey);
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: `
+            You are a query planner for an employee directory database.
+
+            Extract useful search fields from the question.
+
+            Possible fields:
+            - name
+            - job_title
+            - team
+            - responsibility
+
+            Return JSON only.
+          `,
+        },
+        {
+          role: "user",
+          content: question,
+        },
+      ],
+    });
+
+    return JSON.parse(completion.choices[0].message.content || "{}");
+  }
+ 
+  // =========================
+  // PRISMA SEARCH
+  // =========================
+
+  private async prismaSearch(plan: any) {
+    const where: any = {
+      OR: [],
+    };
+
+    if (plan.name) {
+      where.OR.push({
+        name: {
+          contains: plan.name,
+          mode: "insensitive",
+        },
+      });
+    }
+    if (plan.job_title) {
+      where.OR.push({
+        job_title: {
+          contains: plan.job_title,
+          mode: "insensitive",
+        },
+      });
+    }
+
+    if (plan.team) {
+      where.OR.push({
+        team: {
+          name: {
+            contains: plan.team,
+            mode: "insensitive",
+          },
+        },
+      });
+    }
+
+    if (plan.responsibility) {
+      where.OR.push({
+        team: {
+          description: {
+            contains: plan.responsibility,
+            mode: "insensitive",
+          },
+        },
+      });
+    }
+
+    if (where.OR.length === 0) return [];
+
+    const employees = await this.prisma.employee.findMany({
+      where,
+      include: { team: true },
+      take: 5,
+    });
+
+    return this.normalize(employees);
+  }
+
+  // =========================
+  // VECTOR SEARCH (fallback)
+  // =========================
+
+  private async vectorSearch(query: string, apiKey: string) {
+    const vector = await this.embedQuery(query, apiKey);
 
     const result = await this.index.query({
       vector,
-      topK: 8,
+      topK: 3,
       includeMetadata: true,
-      includeValues: false,
-      
     });
 
-    if (!result.matches) return [];
+    if (!result.matches?.length) return [];
 
-    return result.matches.map((m) => ({
-      name: m.metadata?.name,
-      email: m.metadata?.email,
-      team: m.metadata?.team,
-      code: m.metadata?.team?.code,
-      status: m.metadata?.status,
-      room: m.metadata?.work_locations,
-      job_title: m.metadata?.job_title,
-      phone: m.metadata?.phone,
-      team_code: m.metadata?.team_code,
-      responsibilities: m.metadata?.responsibilities,
-    }));
+    const teamCode = result.matches[0].metadata?.team_code;
+
+    if (!teamCode) {
+      const employees = await this.prisma.employee.findMany({
+        where: {
+          team: {
+            description: {
+              contains: query,
+              mode: "insensitive"
+            }
+          }
+        },
+        include: { team: true }
+      });
+    
+      return this.normalize(employees);
+    }
+
+    const employees = await this.prisma.employee.findMany({
+      where: {
+        team: {
+          code: teamCode,
+        },
+      },
+      include: { team: true },
+    });
+
+    return this.normalize(employees);
   }
 
   // =========================
-  // NORMALIZE DB RESULT
+  // NORMALIZE
   // =========================
 
   private normalize(employees: any[]): EmployeeContext[] {
     return employees.map((e) => ({
       name: e.name,
       email: e.email,
-      team: e.team?.name,
-      status: e.status,
-      room: e.work_location,
       job_title: e.job_title,
       phone: e.phone,
+      room: e.work_location,
       team_code: e.team_code,
-      responsibilities: e.team?.description,
-      code: e.team?.code,
+      team: e.team,
     }));
   }
 
   // =========================
-  // SMART SEARCH
-  // =========================
-
-  private async smartSearch(query: string): Promise<EmployeeContext[]> {
-    this.logger.log(`Query: ${query}`);
-
-    // 1️⃣ NAME SEARCH
-    const name = this.extractNameQuery(query);
-
-    if (name) {
-      this.logger.log(`Searching name: ${name}`);
-
-      const employees = await this.prisma.employee.findMany({
-        where: {
-          name: {
-            contains: name,
-            mode: "insensitive",
-          },
-        },
-        include: { team: true },
-      });
-
-      if (employees.length) {
-        return this.normalize(employees);
-      }
-
-      // 2️⃣ JOB TITLE SEARCH
-      const jobEmployees = await this.prisma.employee.findMany({
-        where: {
-          job_title: {
-            contains: name,
-            mode: "insensitive",
-          },
-        },
-        include: { team: true },
-      });
-
-      if (jobEmployees.length) {
-        return this.normalize(jobEmployees);
-      }
-    }
-
-    // 3️⃣ TEAM SEARCH
-    const teamName = this.extractTeamQuery(query);
-
-    if (teamName) {
-      this.logger.log(`Searching team: ${teamName}`);
-
-      const employees = await this.prisma.employee.findMany({
-        where: {
-          team: {
-            name: {
-              contains: teamName,
-              mode: "insensitive",
-            },
-          },
-        },
-        include: { team: true },
-      });
-
-      if (employees.length) {
-        return this.normalize(employees);
-      }
-    }
-
-    // 4️⃣ VECTOR SEARCH (fallback)
-    this.logger.log(`Fallback vector search`);
-
-    return this.vectorSearch(query);
-  }
-
-  // =========================
-  // CONTEXT COMPRESSION
+  // CONTEXT COMPRESS
   // =========================
 
   private compressContext(context: EmployeeContext[]) {
     return context
-      .slice(0, 4)
       .map(
         (e) => `
-Employee Profile
-Name: ${e.name}
-Email: ${e.email}
-Team: ${e.team} ${e.team}
-Job Title: ${e.job_title}
-Phone: ${e.phone}
-Room: ${e.room}
-Code:  ${e?.team_code}
-Responsibilities: ${e.responsibilities}
-`
+          Name: ${e.name}
+          Job Title: ${e.job_title}
+          Team: ${e.team?.name}
+          Email: ${e.email}
+          Phone: ${e.phone}
+          Room: ${e.room}
+          `
       )
       .join("\n");
   }
 
   // =========================
-  // LLM GENERATION
+  // FINAL ANSWER
   // =========================
 
-  private async generateAnswer(
-    query: string,
-    context: EmployeeContext[]
-  ) {
+  private async generateAnswer(question: string, context: EmployeeContext[],  apiKey: string) {
+    const openai = this.getOpenAI(apiKey);
+
     if (!context.length) {
-      return "I don't have enough information.";
+      return "I couldn't find relevant information in the company database.";
     }
 
     const contextText = this.compressContext(context);
 
-    const completion = await this.openai.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0,
       messages: [
         {
           role: "system",
           content: `
-You are an internal company assistant.
+            You are an internal company assistant.
 
-Your job is to help employees find the right person to contact.
+            Use ONLY the employee data provided.
 
-Rules:
-- Always answer in a friendly and helpful way.
-- When the user asks "who", provide employee names if available.
-- Include job title and team if possible.
-- If multiple people match, list them.
-- Never answer with only a short sentence.
-`,
+            Always include:
+            - Name
+            - Email
+            - Phone
+            - Job Title
+            - Room
+            `,
         },
         {
           role: "user",
           content: `
-Question:
-${query}
+            Question:
+            ${question}
 
-Employee Data:
-${contextText}
-`,
+            Employee Data:
+            ${contextText}
+          `,
         },
       ],
     });
@@ -269,15 +286,24 @@ ${contextText}
   // MAIN RAG PIPELINE
   // =========================
 
-  async ask(question: string) {
+  async ask(question: string, apiKey: string) {
     this.logger.log(`Question: ${question}`);
-
-    const context = await this.smartSearch(question);
-
-    this.logger.log(`Context found: ${context.length}`);
-
-    const answer = await this.generateAnswer(question, context);
-
-    return answer;
+  
+    // 1️⃣ AI know question
+    const plan = await this.planQuery(question, apiKey);
+  
+    this.logger.log(`Query plan: ${JSON.stringify(plan)}`);
+  
+    // 2️⃣ Search database
+    let context = await this.prismaSearch(plan);
+  
+    // 3️⃣ Fallback vector search
+    if (!context.length) {
+      this.logger.log("Fallback to vector search");
+      context = await this.vectorSearch(question, apiKey);
+    }
+  
+    // 4️⃣ Generate answer
+    return this.generateAnswer(question, context, apiKey);
   }
 }

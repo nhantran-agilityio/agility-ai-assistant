@@ -1,14 +1,32 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { RagService } from './rag.service';
+import { Body, Controller, Get, Post } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
+import { RagService } from "./rag.service";
+import { SuggestionService } from "./services/suggestion.service";
+import { ChatRequestDto } from "./dto/chat-request.dto";
 
-@Controller('chat')
+@ApiTags("Rag")
+@Controller("chat")
 export class RagController {
-  constructor(private readonly ragService: RagService) {}
+  constructor(
+    private readonly ragService: RagService,
+    private readonly suggestionService: SuggestionService
+  ) {}
 
   @Post()
-  async chat(@Body() body: { message: string }) {
-    return this.ragService.ask(body.message);
+  @ApiOperation({ summary: "Ask chatbot" })
+  async chat(@Body() body: ChatRequestDto) {
+    return this.ragService.ask(body.message, body.apiKey);
   }
 
-  
+  @Get("suggestions")
+  @ApiOperation({ summary: "Get suggested questions" })
+  @ApiResponse({
+    status: 200,
+    description: "List of suggested questions",
+  })
+  getSuggestions() {
+    return {
+      suggestions: this.suggestionService.getSuggestions(),
+    };
+  }
 }

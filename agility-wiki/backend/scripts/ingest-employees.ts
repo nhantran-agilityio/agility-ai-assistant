@@ -37,35 +37,40 @@ async function main() {
   const employeeRows: any[] = XLSX.utils.sheet_to_json(employeeSheet);
 
   for (const row of employeeRows) {
-    const email = row.email?.trim().toLowerCase();
+    const rawEmail = typeof row.email === "string" ? row.email : "";
+
+    const email =
+      rawEmail.trim().toLowerCase() ||
+      `unknown-${Date.now()}-${Math.random()}@local`;
 
     if (!email) {
-        console.log("Skip row because email missing:", row);
-        continue;
+      console.log("Missing email row:", row);
+      return;
     }
+   
     const team = await prisma.team.findUnique({
         where: { code: row.team_code?.trim() },
     });
 
     await prisma.employee.upsert({
-      where: { email: row.email },
+      where: { email },
       update: {
         name: row.name?.trim(),
         date_of_birth: excelDateToJSDate(row.date_of_birth),
         work_location: row.work_location,
         phone: String(row.phone),
         status: row.status,
-        job_title: row.job_title,
+        job_title: row.job_title || null,
         teamId: team?.id,
       },
       create: {
+        email: email,
         name: row.name?.trim(),
         date_of_birth: excelDateToJSDate(row.date_of_birth),
         work_location: row.work_location,
         phone: String(row.phone),
-        email: row.email?.trim(),
         status: row.status,
-        job_title: row.job_title,    
+        job_title: row.job_title || null,
         teamId: team?.id,
       },
     });

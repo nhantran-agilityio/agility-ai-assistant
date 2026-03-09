@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/src/components/Button";
+import { API_ENDPOINTS } from "@/src/constants/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,7 +17,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:3000/auth/login", {
+      const res = await fetch(API_ENDPOINTS.login, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -60,9 +62,9 @@ export default function LoginPage() {
 
         {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <button type="submit" style={styles.button}>
+        <Button type="submit">
           Login
-        </button>
+        </Button>
       </form>
     </div>
   );
@@ -84,11 +86,5 @@ const styles: any = {
   input: {
     padding: "10px",
     fontSize: "16px",
-  },
-  button: {
-    padding: "10px",
-    backgroundColor: "black",
-    color: "white",
-    cursor: "pointer",
   },
 };
