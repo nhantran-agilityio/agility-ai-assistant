@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { chatService } from '../services/chat.service';
+import { chatService } from '../services/chat';
 
 export type ChatMessage = {
   id: string;

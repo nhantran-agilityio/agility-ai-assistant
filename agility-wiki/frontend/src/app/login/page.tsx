@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/Button';
 import { API_ENDPOINTS } from '@/src/constants/api';
+import { authService } from '@/src/services/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,23 +18,14 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch(API_ENDPOINTS.login, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const data = await authService.login(email, password);
 
-      if (!res.ok) {
-        throw new Error('Login failed');
-      }
+      console.log("LOGIN SUCCESS", data);
 
-      // Login is success
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (err) {
-      setError('Email or Password is incorrect');
+      console.error(err);
+      setError("Email or Password is incorrect");
     }
   };
 
