@@ -9,7 +9,7 @@ class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
-  OPENAI_API_KEY: string;
+  OPENAI_API_KEY_SCRIPT: string;
 
   @IsString()
   @IsNotEmpty()
@@ -25,11 +25,9 @@ class EnvironmentVariables {
 }
 
 export function validate(config: Record<string, unknown>) {
-  const validatedConfig = plainToInstance(
-    EnvironmentVariables,
-    config,
-    { enableImplicitConversion: true },
-  );
+  const validatedConfig = plainToInstance(EnvironmentVariables, config, {
+    enableImplicitConversion: true,
+  });
 
   const errors = validateSync(validatedConfig, {
     skipMissingProperties: false,

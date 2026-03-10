@@ -1,18 +1,18 @@
-import * as XLSX from "xlsx";
-import { PrismaClient } from "@prisma/client";
+import * as XLSX from 'xlsx';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 function excelDateToJSDate(serial: number) {
-    const excelEpoch = new Date(1899, 11, 30);
-    return new Date(excelEpoch.getTime() + serial * 86400000);
-  }
+  const excelEpoch = new Date(1899, 11, 30);
+  return new Date(excelEpoch.getTime() + serial * 86400000);
+}
 
 async function main() {
-  const workbook = XLSX.readFile("data/agility_employee.xlsx");
+  const workbook = XLSX.readFile('data/agility_employee.xlsx');
 
   // ===== TEAM SHEET =====
-  const teamSheet = workbook.Sheets["team"];
+  const teamSheet = workbook.Sheets['team'];
   const teamRows: any[] = XLSX.utils.sheet_to_json(teamSheet);
 
   for (const row of teamRows) {
@@ -30,26 +30,26 @@ async function main() {
     });
   }
 
-  console.log("Teams imported");
+  console.log('Teams imported');
 
   // ===== EMPLOYEE SHEET =====
-  const employeeSheet = workbook.Sheets["employee"]; 
+  const employeeSheet = workbook.Sheets['employee'];
   const employeeRows: any[] = XLSX.utils.sheet_to_json(employeeSheet);
 
   for (const row of employeeRows) {
-    const rawEmail = typeof row.email === "string" ? row.email : "";
+    const rawEmail = typeof row.email === 'string' ? row.email : '';
 
     const email =
       rawEmail.trim().toLowerCase() ||
       `unknown-${Date.now()}-${Math.random()}@local`;
 
     if (!email) {
-      console.log("Missing email row:", row);
+      console.log('Missing email row:', row);
       return;
     }
-   
+
     const team = await prisma.team.findUnique({
-        where: { code: row.team_code?.trim() },
+      where: { code: row.team_code?.trim() },
     });
 
     await prisma.employee.upsert({
@@ -76,7 +76,7 @@ async function main() {
     });
   }
 
-  console.log("Employees imported");
+  console.log('Employees imported');
 }
 
 main();

@@ -1,4 +1,4 @@
-import { API_ENDPOINTS } from "../constants/api";
+import { API_ENDPOINTS } from '../constants/api';
 
 export const getSuggestions = async () => {
   const res = await fetch(API_ENDPOINTS.suggestions);
@@ -7,9 +7,9 @@ export const getSuggestions = async () => {
 
 export const askChatbot = async (message: string) => {
   const res = await fetch(API_ENDPOINTS.chat, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({ message }),
   });

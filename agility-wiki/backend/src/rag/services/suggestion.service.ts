@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
-import { SMART_QUESTION_SUGGESTIONS } from "../constants/suggestions";
+import { Injectable } from '@nestjs/common';
+import { SMART_QUESTION_SUGGESTIONS } from '../constants/suggestions';
 
 @Injectable()
 export class SuggestionService {
