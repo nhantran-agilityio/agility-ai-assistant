@@ -5,4 +5,3 @@ export const API_ENDPOINTS = {
   chat: `${API_BASE_URL}/chat`,
   suggestions: `${API_BASE_URL}/chat/suggestions`,
 };
-

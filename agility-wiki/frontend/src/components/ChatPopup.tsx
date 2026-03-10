@@ -1,214 +1,149 @@
-"use client";
+'use client';
 
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-
-import ChatIcon from "./icons/chat-icon";
+// Components
 import {
-    Conversation,
-    ConversationContent,
-    ConversationScrollButton,
-} from "./Conversation";
-import { Message, MessageContent } from "./Message";
-import { ResponseMessages } from "./Response";
-import { TypingIndicator } from "./TypingIndicator";
-import { Textarea } from "./TextArea";
-import { cn } from "../lib/utils";
-import { Button } from "./Button";
-import Suggestions from "./Suggestions";
-import { chatService } from "../services/chat.service";
-import { useOpenAIKey } from "../app/providers/provider";
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from './Conversation';
+import { Message, MessageContent } from './Message';
+import { ResponseMessages } from './Response';
+import { TypingIndicator } from './TypingIndicator';
+import { Textarea } from './TextArea';
+import { Button } from './Button';
+import Suggestions from './Suggestions';
+import { useOpenAIKey } from '../app/providers/provider';
+import { chatService } from '../services/chat.service';
 
-type ChatMessage = {
-    id: string;
-    role: "user" | "assistant";
-    text: string;
-};
+// Icons
+import ChatIcon from './icons/chat-icon';
+
+// Hooks
+import { useChat } from '../hooks/useChat';
+
+// Utils
+import { cn } from '../lib/utils';
 
 export default function ChatbotPopup() {
-    const [open, setOpen] = useState(false);
-    const [input, setInput] = useState("");
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [controller, setController] = useState<AbortController | null>(null);
-    const [needHuman, setNeedHuman] = useState(false);
-    const { apiKey = '' } = useOpenAIKey();
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
-    useEffect(() => {
-        if (!open) return;
+  const { apiKey } = useOpenAIKey() || '';
 
-        chatService.getSuggestions().then((data) => {
-            setSuggestions(data.suggestions || []);
-        });
-    }, [open]);
+  const { messages, loading, error, sendMessage, cancel, needHuman } = useChat(
+    apiKey ?? undefined,
+  );
 
-    useEffect(() => {
-        const el = document.querySelector("#chat-end");
-        el?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+  const endRef = useRef<HTMLDivElement>(null);
 
-    const sendMessage = async (text: string) => {
-        const abort = new AbortController();
-        setController(abort);
+  useEffect(() => {
+    if (!open) return;
 
-        const userMessage: ChatMessage = {
-            id: crypto.randomUUID(),
-            role: "user",
-            text,
-        };
+    chatService.getSuggestions().then((data) => {
+      setSuggestions(data.suggestions || []);
+    });
+  }, [open]);
 
-        setMessages((prev) => [...prev, userMessage]);
-        setLoading(true);
-        setError(null);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-        try {
-            if (!apiKey) {
-                setError("OpenAI API key is required");
-                return;
-            }
+  const handleSend = async (e: { preventDefault: () => void }) => {
+    e.preventDefault();
 
-            const data = await chatService.ask(text, abort.signal, apiKey);
+    if (!input.trim()) return;
 
-            const aiMessage: ChatMessage = {
-                id: crypto.randomUUID(),
-                role: "assistant",
-                text: data.text || "",
-            };
+    const text = input;
+    setInput('');
 
-            setMessages((prev) => [...prev, aiMessage]);
+    sendMessage(text);
+  };
 
-            // Detect AI fail
-            if (
-                data.text?.toLowerCase().includes("don't know") ||
-                data.text?.toLowerCase().includes("not found")
-            ) {
-                setNeedHuman(true);
-            }
+  return (
+    <>
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className="fixed bottom-6 right-6 z-50 rounded-full bg-black text-white shadow-xl hover:scale-110 transition p-4"
+        >
+          <ChatIcon />
+        </button>
+      )}
 
-        } catch (err: any) {
+      {open && (
+        <div className="fixed bottom-6 right-6 z-50 w-[420px] h-[650px] bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-900">
+            <span className="text-sm font-semibold text-white">
+              AI Assistant
+            </span>
+            <button
+              onClick={() => setOpen(false)}
+              className="text-zinc-400 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
 
-            if (err.name === "AbortError") {
-                console.log("Request cancelled");
-                return;
-            }
+          <div className="flex-1 overflow-hidden">
+            <Conversation className="h-full">
+              <ConversationContent>
+                {messages.length === 0 && suggestions.length > 0 && (
+                  <Suggestions
+                    suggestions={suggestions}
+                    onSelect={sendMessage}
+                  />
+                )}
 
-            setError(err.message);
-            setNeedHuman(true);
+                {messages.map((message) => (
+                  <Message key={message.id} from={message.role}>
+                    <MessageContent from={message.role}>
+                      <ResponseMessages>{message.text}</ResponseMessages>
+                    </MessageContent>
+                  </Message>
+                ))}
 
-        } finally {
-            setLoading(false);
-            setController(null);
-        }
-    };
+                {loading && <TypingIndicator />}
+                {error && (
+                  <div className="text-red-500 text-sm p-2">{error}</div>
+                )}
 
-    const handleSend = async (e: { preventDefault: () => void; }) => {
-        e.preventDefault();
-        if (!input.trim()) return;
+                <div ref={endRef} />
+              </ConversationContent>
 
-        const text = input;
-        setInput("");
+              <ConversationScrollButton />
+            </Conversation>
+          </div>
 
-        sendMessage(text);
-    };
+          <form
+            onSubmit={handleSend}
+            className="border-t border-zinc-800 bg-zinc-900 p-4"
+          >
+            <div className="flex items-end gap-3 rounded-2xl border border-zinc-800 px-4 py-3">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Send a message..."
+                disabled={loading}
+                className={cn(
+                  'w-full resize-none border-none bg-transparent',
+                  'max-h-48 min-h-16 outline-none',
+                )}
+              />
 
-    const handleSuggestionClick = async (text: string) => {
-        await sendMessage(text);
-    };
-
-    return (
-        <>
-            {!open && (
-                <button
-                    onClick={() => setOpen(true)}
-                    className="fixed bottom-6 right-6 z-50 rounded-full bg-black text-white shadow-xl hover:scale-110 transition p-4"
-                >
-                    <ChatIcon />
-                </button>
-            )}
-
-            {open && (
-                <div className="fixed bottom-6 right-6 z-50 w-[420px] h-[650px] bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-900">
-                        <span className="text-sm font-semibold text-white">
-                            AI Assistant
-                        </span>
-                        <button
-                            onClick={() => setOpen(false)}
-                            className="text-zinc-400 hover:text-white"
-                        >
-                            ✕
-                        </button>
-                    </div>
-
-                    <div className="flex-1 relative overflow-hidden">
-                        <Conversation className="h-full">
-                            <ConversationContent>
-                                {messages.length === 0 && suggestions.length > 0 && (
-                                    <Suggestions
-                                        suggestions={suggestions}
-                                        onSelect={handleSuggestionClick}
-                                    />
-                                )}
-                                {messages.map((message) => (
-                                    <Fragment key={message.id}>
-                                        <Message from={message.role}>
-                                            <MessageContent from={message.role}>
-                                                <ResponseMessages>
-                                                    {message.text}
-                                                </ResponseMessages>
-                                            </MessageContent>
-                                        </Message>
-                                    </Fragment>
-                                ))}
-
-                                {loading && <TypingIndicator />}
-
-                                {error && (
-                                    <div className="text-red-500 text-sm p-2">
-                                        {error}
-                                    </div>
-                                )}
-                            </ConversationContent>
-
-                            <ConversationScrollButton />
-                        </Conversation>
-                    </div>
-
-                    <form
-                        onSubmit={handleSend}
-                        className="border-t border-zinc-800 bg-zinc-900 p-4"
-                    >
-                        <div className="flex items-end gap-3 rounded-2xl border border-zinc-800 px-4 py-3">
-                            <Textarea
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                placeholder="Send a message..."
-                                disabled={loading}
-                                className={cn(
-                                    "w-full resize-none border-none bg-transparent",
-                                    "max-h-48 min-h-16 outline-none"
-                                )}
-                            />
-
-                            <Button
-                                type={loading ? "button" : "submit"}
-                                onClick={() => {
-                                    if (loading && controller) {
-                                        controller.abort();
-                                        setLoading(false);
-                                    }
-                                }}
-                                disabled={!input.trim() && !loading}
-                            >
-                                {loading ? "Stop" : "Send"}
-                            </Button>
-                        </div>
-                    </form>
-                </div>
-            )}
-        </>
-    );
+              <Button
+                type={loading ? 'button' : 'submit'}
+                onClick={() => loading && cancel()}
+                disabled={!input.trim() && !loading}
+              >
+                {loading ? 'Stop' : 'Send'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+    </>
+  );
 }

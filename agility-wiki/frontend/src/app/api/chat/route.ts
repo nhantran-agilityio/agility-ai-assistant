@@ -1,3 +1,5 @@
+import { API_ENDPOINTS } from '@/src/constants/api';
+
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
@@ -5,30 +7,26 @@ export async function POST(req: Request) {
     const lastMessage = messages[messages.length - 1]?.content;
 
     if (!lastMessage) {
-      return new Response("No message provided", { status: 400 });
+      return new Response('No message provided', { status: 400 });
     }
 
     // Call NestJS backend
-    const backendResponse = await fetch(
-      "http://localhost:3000/chat",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: lastMessage,
-        }),
-      }
-    );
+    const backendResponse = await fetch(API_ENDPOINTS.chat, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: lastMessage,
+      }),
+    });
 
     if (!backendResponse.ok) {
-      return new Response("Backend error", { status: 500 });
+      return new Response('Backend error', { status: 500 });
     }
 
     const data = await backendResponse.json();
-    const answer =
-      data.answer ?? "I don't have enough information.";
+    const answer = data.text ?? "I don't have enough information.";
 
     const encoder = new TextEncoder();
 
@@ -38,19 +36,19 @@ export async function POST(req: Request) {
         controller.enqueue(
           encoder.encode(
             `data: ${JSON.stringify({
-              type: "text-delta",
+              type: 'text-delta',
               text: answer,
-            })}\n\n`
-          )
+            })}\n\n`,
+          ),
         );
 
         // finish event
         controller.enqueue(
           encoder.encode(
             `data: ${JSON.stringify({
-              type: "finish",
-            })}\n\n`
-          )
+              type: 'finish',
+            })}\n\n`,
+          ),
         );
 
         controller.close();
@@ -59,14 +57,14 @@ export async function POST(req: Request) {
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
       },
     });
   } catch (error) {
     console.error(error);
-    return new Response("Internal Server Error", {
+    return new Response('Internal Server Error', {
       status: 500,
     });
   }
