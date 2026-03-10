@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/Button';
 import { API_ENDPOINTS } from '@/src/constants/api';
+import { authService } from '@/src/services/auth';
+import { Input } from '@/src/components/Input';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,23 +19,14 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch(API_ENDPOINTS.login, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const data = await authService.login(email, password);
 
-      if (!res.ok) {
-        throw new Error('Login failed');
-      }
+      console.log("LOGIN SUCCESS", data);
 
-      // Login is success
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (err) {
-      setError('Email or Password is incorrect');
+      console.error(err);
+      setError("Email or Password is incorrect");
     }
   };
 
@@ -42,7 +35,7 @@ export default function LoginPage() {
       <form onSubmit={handleLogin} style={styles.form}>
         <h2>Agility Wiki Login</h2>
 
-        <input
+        <Input
           type="email"
           placeholder="Email"
           value={email}
@@ -51,7 +44,7 @@ export default function LoginPage() {
           style={styles.input}
         />
 
-        <input
+        <Input
           type="password"
           placeholder="Password"
           value={password}
