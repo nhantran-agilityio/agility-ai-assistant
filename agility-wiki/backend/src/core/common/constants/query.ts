@@ -1,1 +1,1 @@
-export const SIMILARITY_THRESHOLD = 0.75;
+export const SIMILARITY_THRESHOLD = 0.65;

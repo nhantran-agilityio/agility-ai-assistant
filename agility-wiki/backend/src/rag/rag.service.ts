@@ -4,6 +4,7 @@ import { Index, Pinecone } from '@pinecone-database/pinecone';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ERROR_MESSAGES } from 'src/core/common/constants/error';
 import { RagResponse } from 'src/core/common/types/rag-response.type';
+import { SIMILARITY_THRESHOLD } from 'src/core/common/constants/query';
 
 interface EmployeeContext {
   name: string;
@@ -209,7 +210,7 @@ export class RagService {
       const teamCodes = [
         ...new Set(
           result.matches
-            .filter((m) => m.score && m.score > 0.65)
+            .filter((m) => m.score && m.score > SIMILARITY_THRESHOLD)
             .map((m) => m.metadata?.team_code)
             .filter((c): c is string => typeof c === 'string'),
         ),
