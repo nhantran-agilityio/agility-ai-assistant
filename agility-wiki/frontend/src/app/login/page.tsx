@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/Button';
 import { API_ENDPOINTS } from '@/src/constants/api';
 import { authService } from '@/src/services/auth';
+import { Input } from '@/src/components/Input';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function LoginPage() {
       <form onSubmit={handleLogin} style={styles.form}>
         <h2>Agility Wiki Login</h2>
 
-        <input
+        <Input
           type="email"
           placeholder="Email"
           value={email}
@@ -43,7 +44,7 @@ export default function LoginPage() {
           style={styles.input}
         />
 
-        <input
+        <Input
           type="password"
           placeholder="Password"
           value={password}
