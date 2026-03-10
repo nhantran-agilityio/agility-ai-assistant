@@ -3,7 +3,10 @@ import { SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
-import { swaggerConfig, swaggerCustomOptions } from './core/config/swagger.config';
+import {
+  swaggerConfig,
+  swaggerCustomOptions,
+} from './core/config/swagger.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,10 +17,10 @@ async function bootstrap() {
 
   SwaggerModule.setup('api', app, document, swaggerCustomOptions);
   app.enableCors({
-    origin: "http://localhost:4000",
+    origin: 'http://localhost:4000',
     credentials: true,
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    allowedHeaders: "Content-Type,Authorization",
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type,Authorization',
   });
   await app.listen(process.env.PORT ?? 3000);
 }

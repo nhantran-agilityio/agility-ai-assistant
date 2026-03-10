@@ -1,13 +1,13 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class ChatRequestDto {
   @ApiProperty({
-    example: "who is Nhàn?",
+    example: 'who is Nhàn?',
   })
   message: string;
 
   @ApiProperty({
-    example: "sk-xxxx",
+    example: 'sk-xxxx',
   })
   apiKey: string;
 }
