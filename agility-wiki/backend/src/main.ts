@@ -17,7 +17,7 @@ async function bootstrap() {
 
   SwaggerModule.setup('api', app, document, swaggerCustomOptions);
   app.enableCors({
-    origin: 'http://localhost:4000',
+    origin: process.env.FRONTEND_URL,
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type,Authorization',
