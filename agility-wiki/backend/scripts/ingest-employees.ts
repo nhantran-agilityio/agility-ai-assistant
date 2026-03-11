@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { PrismaClient } from '@prisma/client';
+import path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -9,8 +10,10 @@ function excelDateToJSDate(serial: number) {
 }
 
 async function main() {
-  const workbook = XLSX.readFile('data/agility_employee.xlsx');
+  // const workbook = XLSX.readFile('data/agility_employee.xlsx');
+  const filePath = path.join(process.cwd(), "data", "agility_employee.xlsx");
 
+  const workbook = XLSX.readFile(filePath);
   // ===== TEAM SHEET =====
   const teamSheet = workbook.Sheets['team'];
   const teamRows: any[] = XLSX.utils.sheet_to_json(teamSheet);
