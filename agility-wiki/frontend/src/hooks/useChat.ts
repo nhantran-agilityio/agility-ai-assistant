@@ -13,7 +13,6 @@ export function useChat(apiKey?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [needHuman, setNeedHuman] = useState(false);
 
   const controllerRef = useRef<AbortController | null>(null);
 
@@ -43,23 +42,6 @@ export function useChat(apiKey?: string) {
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-
-      // handle backend status
-      if (data.status === 'no_data') {
-        setNeedHuman(true);
-      }
-
-      if (data.status === 'ai_error') {
-        setError('AI service is currently unavailable.');
-      }
-
-      if (data.status === 'rate_limit') {
-        setError('Too many requests. Please try again later.');
-      }
-
-      if (data.status === 'db_error') {
-        setError('Database error occurred while retrieving information.');
-      }
     } catch (err: any) {
       if (err.name === 'AbortError') return;
 
@@ -79,7 +61,6 @@ export function useChat(apiKey?: string) {
     messages,
     loading,
     error,
-    needHuman,
     sendMessage,
     cancel,
   };
