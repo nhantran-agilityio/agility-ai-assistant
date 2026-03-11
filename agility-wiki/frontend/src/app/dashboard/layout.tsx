@@ -1,11 +1,13 @@
-"use client";
+'use client';
 
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from '@/src/hooks/useAuth';
 
-export default function DashboardLayout({ children }: Readonly<{
-    children: React.ReactNode;
+export default function DashboardLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
 }>) {
-    useAuth();
+  useAuth();
 
-    return <>{children}</>;
+  return <>{children}</>;
 }

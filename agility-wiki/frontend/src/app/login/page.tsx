@@ -21,10 +21,10 @@ export default function LoginPage() {
     try {
       const data = await authService.login(email, password);
 
-      router.push("/dashboard");
+      router.push('/dashboard');
     } catch (err) {
       console.error(err);
-      setError("Email or Password is incorrect");
+      setError('Email or Password is incorrect');
     }
   };
 

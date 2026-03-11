@@ -3,5 +3,5 @@ export const API_ENDPOINTS = {
   login: `/auth/login`,
   chat: `/chat`,
   suggestions: `/chat/suggestions`,
-  refresh: `/auth/refresh`
+  refresh: `/auth/refresh`,
 };

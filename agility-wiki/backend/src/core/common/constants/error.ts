@@ -4,4 +4,5 @@ export const ERROR_MESSAGES = {
   DATABASE_ERROR: 'Database error occurred while retrieving employee data.',
   INVALID_OPENAI_KEY: 'Invalid OpenAI API key.',
   AI_SERVICE_UNAVAILABLE: 'The AI assistant is temporarily unavailable.',
+  NO_DATA: `I couldn't find relevant information in the company database.`
 };
