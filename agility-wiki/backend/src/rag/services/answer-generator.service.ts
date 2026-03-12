@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { compressContext } from 'src/core/utils/context-compress.util';
+import { compressContext } from '@core/utils/context-compress.util';
 
 @Injectable()
 export class AnswerGeneratorService {

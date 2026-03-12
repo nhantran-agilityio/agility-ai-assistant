@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import type { Response } from 'express';
-import { ERROR_MESSAGES } from 'src/core/common/constants/error';
 import { QueryPlannerService } from './services/query-planner.service';
 import { PrismaSearchService } from './services/prisma-search.service';
 import { VectorSearchService } from './services/vector-search.service';
 import { AnswerGeneratorService } from './services/answer-generator.service';
-import { RagResponse } from 'src/core/common/types/rag-response.type';
+import { ERROR_MESSAGES } from '@/core/common/constants/error';
+import { RagResponse } from './interfaces/query-plan.interface';
 
 @Injectable()
 export class RagService {

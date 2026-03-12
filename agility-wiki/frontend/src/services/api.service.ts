@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_ENDPOINTS } from '../constants/api';
+import { API_BASE_URL, API_ENDPOINTS } from '@constants/api';
 
 export async function apiFetch(url: string, options: RequestInit = {}) {
   let accessToken = localStorage.getItem('accessToken');

@@ -3,20 +3,21 @@
 import { useEffect, useRef, useState } from 'react';
 
 import Suggestions from './Suggestions';
-import { useChat } from '../hooks/useChat';
-import { useOpenAIKey } from '../app/providers/provider';
-import { chatService } from '../services/chat';
 import { Input } from './Input';
 import { Button } from './Button';
 import { TypingIndicator } from './TypingIndicator';
+
+import { useOpenAIKey } from '@/providers/openai-provider';
+import { useChat } from '@/hooks/useChat';
+import { chatService } from '@/services/chat.service';
 
 export default function Chat() {
 	const [input, setInput] = useState('');
 	const [suggestions, setSuggestions] = useState<string[]>([]);
 
 	const { apiKey } = useOpenAIKey() || {};
-
-	const { messages, loading, error, sendMessage, cancel } = useChat(apiKey || undefined);
+	const { messages, loading, error, sendMessage, cancel } =
+		useChat(apiKey || undefined);
 
 	const endRef = useRef<HTMLDivElement>(null);
 
@@ -39,13 +40,12 @@ export default function Chat() {
 	};
 
 	return (
-		<div>
-
+		<section className="w-full flex justify-center px-3 md:px-6">
 			{/* Chat container */}
-			<div className="w-[900px] h-[600px] bg-white rounded-xl shadow flex flex-col">
+			<div className="w-full max-w-3xl h-[80vh] bg-white rounded-xl shadow flex flex-col">
 
 				{/* Messages */}
-				<div className="flex-1 overflow-y-auto p-6 space-y-6">
+				<div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
 
 					{/* Suggestions */}
 					{messages.length === 0 && suggestions.length > 0 && (
@@ -59,14 +59,14 @@ export default function Chat() {
 						<div
 							key={msg.id}
 							className={`flex ${msg.role === 'user'
-								? 'justify-end'
-								: 'justify-start'
+									? 'justify-end'
+									: 'justify-start'
 								}`}
 						>
 							<div
-								className={`max-w-[70%] px-4 py-3 rounded-lg text-sm leading-relaxed ${msg.role === 'user'
-									? 'bg-slate-900 text-white'
-									: 'bg-gray-200 text-gray-800'
+								className={`max-w-[85%] md:max-w-[70%] px-4 py-3 rounded-lg text-sm leading-relaxed ${msg.role === 'user'
+										? 'bg-slate-900 text-white'
+										: 'bg-gray-200 text-gray-800'
 									}`}
 							>
 								{msg.text}
@@ -74,7 +74,7 @@ export default function Chat() {
 						</div>
 					))}
 
-
+					{/* typing */}
 					{loading && (
 						<div className="flex justify-start">
 							<div className="px-4 py-3 rounded-lg">
@@ -83,6 +83,7 @@ export default function Chat() {
 						</div>
 					)}
 
+					{/* error */}
 					{error && (
 						<div className="text-red-500 text-sm">
 							{error}
@@ -90,13 +91,12 @@ export default function Chat() {
 					)}
 
 					<div ref={endRef} />
-
 				</div>
 
 				{/* Input */}
 				<form
 					onSubmit={handleSend}
-					className="border-t p-4 flex gap-3"
+					className="border-t p-3 md:p-4 flex flex-col sm:flex-row gap-3"
 				>
 					<Input
 						value={input}
@@ -114,8 +114,7 @@ export default function Chat() {
 						{loading ? 'Stop' : 'Send'}
 					</Button>
 				</form>
-
 			</div>
-		</div>
+		</section>
 	);
 }

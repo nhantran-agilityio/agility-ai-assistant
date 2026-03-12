@@ -1,6 +1,7 @@
-import { ApiKeyModal } from '@/src/components/ApiKeyModal';
-import { OpenAIKeyProvider } from '../providers/provider';
-import Chat from '@/src/components/Chat';
+import { OpenAIKeyProvider } from '../../providers/openai-provider';
+
+import Chat from '@/components/Chat';
+import { ApiKeyModal } from '@/components/ApiKeyModal';
 
 export default function Dashboard() {
   return (

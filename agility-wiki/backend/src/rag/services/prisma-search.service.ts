@@ -1,6 +1,6 @@
+import { normalize } from '@/core/helpers/normalize.utils';
+import { PrismaService } from '@/database/prisma.service';
 import { Injectable, Logger } from '@nestjs/common';
-import { normalize } from 'src/core/utils/normalize.utils';
-import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class PrismaSearchService {

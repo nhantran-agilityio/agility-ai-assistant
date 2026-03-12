@@ -1,13 +1,8 @@
 'use client';
-
 import { useRef, useState } from 'react';
-import { chatService } from '../services/chat';
 
-export type ChatMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  text: string;
-};
+import { chatService } from '@/services/chat.service';
+import { ChatMessage } from '@/types/chat';
 
 export function useChat(apiKey?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);

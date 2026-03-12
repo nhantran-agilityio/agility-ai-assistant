@@ -17,7 +17,7 @@ import type { Response } from 'express';
 import { RagService } from './rag.service';
 import { SuggestionService } from './services/suggestion.service';
 import { ChatRequestDto } from './dto/chat-request.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 
 @ApiTags('Rag')
 @Controller('chat')

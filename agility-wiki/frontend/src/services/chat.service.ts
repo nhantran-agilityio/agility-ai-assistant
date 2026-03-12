@@ -1,5 +1,5 @@
-import { API_ENDPOINTS } from '../constants/api';
-import { apiFetch } from './api';
+import { API_ENDPOINTS } from '@constants/api';
+import { apiFetch } from './api.service';
 
 export const chatService = {
   async ask(message: string, signal?: AbortSignal, apiKey?: string) {

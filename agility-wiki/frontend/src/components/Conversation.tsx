@@ -3,10 +3,11 @@
 import type { ComponentProps } from 'react';
 import { useCallback } from 'react';
 import { StickToBottom, useStickToBottomContext } from 'use-stick-to-bottom';
-import { Button } from './Button';
-
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
-import { cn } from '../lib/utils';
+
+import { cn } from '@/lib/utils';
+
+import { Button } from './Button';
 import { ArrowDownIcon } from './icons/arrow-down-icon';
 
 export type ConversationProps = ComponentPropsWithoutRef<

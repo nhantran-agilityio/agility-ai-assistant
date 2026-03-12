@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Button } from './Button';
 import { Input } from './Input';
-import { useOpenAIKey } from '../app/providers/provider';
+
+import { useOpenAIKey } from '@/providers/openai-provider';
 
 export function ApiKeyModal() {
   const { apiKey, setApiKey, loading, error, clearError } = useOpenAIKey();

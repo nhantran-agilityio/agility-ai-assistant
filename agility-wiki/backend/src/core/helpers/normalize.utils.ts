@@ -1,4 +1,4 @@
-import { EmployeeContext } from 'src/rag/interfaces/employee.interface';
+import { EmployeeContext } from '@rag/interfaces/employee.interface';
 
 export function normalize(employees): EmployeeContext[] {
   return employees.map((e) => ({

@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Pinecone, Index } from '@pinecone-database/pinecone';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
-import { SIMILARITY_THRESHOLD } from 'src/core/common/constants/query';
-import { normalize } from 'src/core/utils/normalize.utils';
+import { PrismaService } from '@/database/prisma.service';
+import { SIMILARITY_THRESHOLD } from '@/core/common/constants/query';
+import { normalize } from '@/core/helpers/normalize.utils';
 
 @Injectable()
 export class VectorSearchService {
