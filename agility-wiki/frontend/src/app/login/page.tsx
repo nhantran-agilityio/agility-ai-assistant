@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+
 import { Button } from '@/src/components/Button';
-import { API_ENDPOINTS } from '@/src/constants/api';
-import { authService } from '@/src/services/auth';
 import { Input } from '@/src/components/Input';
+import { authService } from '@/src/services/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,25 +13,34 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: { preventDefault: () => void }) => {
+  const handleLogin = async (e: any) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
-      const data = await authService.login(email, password);
+      await authService.login(email, password);
 
       router.push('/dashboard');
     } catch (err) {
       console.error(err);
       setError('Email or Password is incorrect');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <form onSubmit={handleLogin} style={styles.form}>
-        <h2>Agility Wiki Login</h2>
+    <div className="h-screen flex items-center justify-center bg-gray-400">
+      <form
+        onSubmit={handleLogin}
+        className="w-[480px] bg-white rounded-xl shadow-lg p-8 flex flex-col gap-5"
+      >
+        <h2 className="text-2xl font-semibold text-center text-black">
+          Agility Wiki Login
+        </h2>
 
         <Input
           type="email"
@@ -39,7 +48,6 @@ export default function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          style={styles.input}
         />
 
         <Input
@@ -48,32 +56,22 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          style={styles.input}
         />
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && (
+          <p className="text-red-500 text-sm text-center">
+            {error}
+          </p>
+        )}
 
-        <Button type="submit">Login</Button>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition disabled:bg-gray-400"
+        >
+          {loading ? 'Logging in...' : 'Login'}
+        </Button>
       </form>
     </div>
   );
 }
-
-const styles: any = {
-  container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: '300px',
-    gap: '10px',
-  },
-  input: {
-    padding: '10px',
-    fontSize: '16px',
-  },
-};

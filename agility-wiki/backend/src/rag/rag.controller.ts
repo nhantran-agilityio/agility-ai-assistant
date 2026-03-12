@@ -1,10 +1,19 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UseGuards,
+  Res,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import type { Response } from 'express';
+
 import { RagService } from './rag.service';
 import { SuggestionService } from './services/suggestion.service';
 import { ChatRequestDto } from './dto/chat-request.dto';
@@ -29,6 +38,19 @@ export class RagController {
       text: result.text,
       status: result.status,
     };
+  }
+
+  // API streaming
+  @Post('stream')
+  @ApiOperation({ summary: 'Ask chatbot (stream response)' })
+  async streamChat(
+    @Body() body: ChatRequestDto,
+    @Res() res: Response,
+  ) {
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    await this.ragService.stream(body.message, body.apiKey, res);
   }
 
   @Get('suggestions')

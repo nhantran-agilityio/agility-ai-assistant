@@ -34,14 +34,37 @@ export function useChat(apiKey?: string) {
 
     try {
       const data = await chatService.ask(text, controller.signal, apiKey);
+      const res = await chatService.ask(text, controller.signal, apiKey);
 
-      const aiMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        text: data.text || '',
-      };
+        if (!res.body) {
+          throw new Error('No response body');
+        }
 
-      setMessages((prev) => [...prev, aiMessage]);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+
+        let aiText = '';
+
+        const aiId = crypto.randomUUID();
+
+        setMessages((prev) => [
+          ...prev,
+          { id: aiId, role: 'assistant', text: '' },
+        ]);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          aiText += chunk;
+
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiId ? { ...m, text: aiText } : m
+            )
+          );
+        }
     } catch (err: any) {
       if (err.name === 'AbortError') return;
 
