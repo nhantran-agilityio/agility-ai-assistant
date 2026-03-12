@@ -1,19 +1,13 @@
 'use client';
-
 import { useRef, useState } from 'react';
-import { chatService } from '../services/chat';
 
-export type ChatMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  text: string;
-};
+import { chatService } from '@/services/chat.service';
+import { ChatMessage } from '@/types/chat';
 
 export function useChat(apiKey?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [needHuman, setNeedHuman] = useState(false);
 
   const controllerRef = useRef<AbortController | null>(null);
 
@@ -35,31 +29,37 @@ export function useChat(apiKey?: string) {
 
     try {
       const data = await chatService.ask(text, controller.signal, apiKey);
+      const res = await chatService.ask(text, controller.signal, apiKey);
 
-      const aiMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        text: data.text || '',
-      };
+        if (!res.body) {
+          throw new Error('No response body');
+        }
 
-      setMessages((prev) => [...prev, aiMessage]);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
 
-      // handle backend status
-      if (data.status === 'no_data') {
-        setNeedHuman(true);
-      }
+        let aiText = '';
 
-      if (data.status === 'ai_error') {
-        setError('AI service is currently unavailable.');
-      }
+        const aiId = crypto.randomUUID();
 
-      if (data.status === 'rate_limit') {
-        setError('Too many requests. Please try again later.');
-      }
+        setMessages((prev) => [
+          ...prev,
+          { id: aiId, role: 'assistant', text: '' },
+        ]);
 
-      if (data.status === 'db_error') {
-        setError('Database error occurred while retrieving information.');
-      }
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          aiText += chunk;
+
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiId ? { ...m, text: aiText } : m
+            )
+          );
+        }
     } catch (err: any) {
       if (err.name === 'AbortError') return;
 
@@ -79,7 +79,6 @@ export function useChat(apiKey?: string) {
     messages,
     loading,
     error,
-    needHuman,
     sendMessage,
     cancel,
   };
