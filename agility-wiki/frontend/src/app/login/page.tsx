@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { authService } from '@/services/auth';
+import { authService } from '@/services/auth.service';
 
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';

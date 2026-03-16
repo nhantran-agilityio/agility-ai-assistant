@@ -10,7 +10,6 @@ export class PrismaSearchService {
 
   async prismaSearch(plan: any) {
     const where: any = { OR: [] };
-
     if (plan.name) {
       where.OR.push({
         name: { contains: plan.name, mode: 'insensitive' },

@@ -1,4 +1,4 @@
-import { EmployeeContext } from "@/rag/interfaces/employee.interface";
+import { EmployeeContext } from '@/rag/interfaces/employee.interface';
 
 export function compressContext(context: EmployeeContext[]) {
   return context

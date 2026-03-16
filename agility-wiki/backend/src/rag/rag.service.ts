@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import type { Response } from 'express';
+
 import { QueryPlannerService } from './services/query-planner.service';
-import { PrismaSearchService } from './services/prisma-search.service';
-import { VectorSearchService } from './services/vector-search.service';
 import { AnswerGeneratorService } from './services/answer-generator.service';
-import { ERROR_MESSAGES } from '@/core/common/constants/error';
 import { RagResponse } from './interfaces/query-plan.interface';
+import { ERROR_MESSAGES } from '@/core/constants/error';
+import { VectorSearchTool } from './tools/vector-search.tool';
+import { PrismaSearchTool } from './tools/prisma-search.tool';
 
 @Injectable()
 export class RagService {
@@ -14,51 +15,73 @@ export class RagService {
 
   constructor(
     private planner: QueryPlannerService,
-    private prismaSearch: PrismaSearchService,
-    private vectorSearch: VectorSearchService,
+    private prismaSearchTool: PrismaSearchTool,
+    private vectorSearchTool: VectorSearchTool,
     private answerGenerator: AnswerGeneratorService,
   ) {}
 
+  /**
+   * Retrieve context from DB or Vector search
+   */
+  private async retrieveContext(question: string, apiKey: string) {
+    const start = Date.now();
+
+    const plan = await this.planner.planQuery(question, apiKey);
+
+    this.logger.log(`Query plan: ${JSON.stringify(plan)}`);
+
+    let context = await this.prismaSearchTool.search(plan);
+    this.logger.log(`PrismaSearch results: ${context?.length}`);
+
+    if (!context || context.length === 0) {
+      this.logger.log(`Using VectorSearchTool`);
+      context = await this.vectorSearchTool.search(question, apiKey);
+    }
+
+    this.logger.log(`Retrieval took ${Date.now() - start}ms`);
+
+    return context;
+  }
+
+  /**
+   * Format context for LLM
+   */
+  private formatContext(context: any[]) {
+    return context
+      .map(
+        (c) => `
+        Name: ${c.name}
+        Job Title: ${c.job_title}
+        Email: ${c.email}
+        Phone: ${c.phone}
+        Room: ${c.room}
+        Team: ${c.team?.name ?? ''}
+        `,
+      )
+      .join('\n');
+  }
+
+  /**
+   * Streaming answer
+   */
   async stream(message: string, apiKey: string, res: Response) {
     this.logger.log(`Streaming question: ${message}`);
 
     try {
-      // 1️⃣ Query planning
-      const plan = await this.planner.planQuery(message, apiKey);
+      const context = await this.retrieveContext(message, apiKey);
 
-      this.logger.log(`Query plan: ${JSON.stringify(plan)}`);
-
-      // 2️⃣ Try Prisma search first
-      let context: any = await this.prismaSearch.prismaSearch(plan);
-
-      // 3️⃣ Fallback to vector search
-      if (!context.length) {
-        this.logger.log('Fallback to vector search');
-        context = await this.vectorSearch.vectorSearch(message, apiKey);
-      }
-
-      if (!context.length) {
+      if (!context || context.length === 0) {
         res.write(ERROR_MESSAGES.NO_DATA);
         res.end();
         return;
       }
 
-      // 4️⃣ Convert context → text
-      const contextText = Array.isArray(context)
-        ? context
-            .map((c) => {
-              if (typeof c === 'string') return c;
-              if (c.text) return c.text;
-              return JSON.stringify(c);
-            })
-            .join('\n\n')
-        : String(context);
+      const contextText = this.formatContext(context);
 
       const openai = new OpenAI({
-        apiKey: apiKey || process.env.OPENAI_API_KEY!,
+        apiKey: apiKey,
       });
 
-      // 5️⃣ Stream response
       const stream = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         stream: true,
@@ -66,14 +89,15 @@ export class RagService {
           {
             role: 'system',
             content: `
-            You are an internal company assistant.
+              You are an internal company assistant.
 
-            Answer ONLY using the context below.
-            If the answer is not in the context, say you don't have that information.
+              Use ONLY the provided context to answer.
 
-            Context:
-            ${contextText}
-            `,
+              If the answer is not in the context, say you cannot find the information in the company database.
+
+              Context:
+              ${contextText}
+              `,
           },
           {
             role: 'user',
@@ -82,7 +106,11 @@ export class RagService {
         ],
       });
 
-      // 6️⃣ Send tokens to FE
+      // handle client disconnect
+      res.on('close', () => {
+        this.logger.warn('Client disconnected from stream');
+      });
+
       for await (const chunk of stream) {
         const token = chunk.choices?.[0]?.delta?.content;
 
@@ -100,22 +128,16 @@ export class RagService {
     }
   }
 
+  /**
+   * Non-streaming answer
+   */
   async ask(question: string, apiKey: string): Promise<RagResponse> {
     this.logger.log(`Question: ${question}`);
 
     try {
-      const plan = await this.planner.planQuery(question, apiKey);
+      const context = await this.retrieveContext(question, apiKey);
 
-      this.logger.log(`Query plan: ${JSON.stringify(plan)}`);
-
-      let context = await this.prismaSearch.prismaSearch(plan);
-
-      if (!context.length) {
-        this.logger.log('Fallback to vector search');
-        context = await this.vectorSearch.vectorSearch(question, apiKey);
-      }
-
-      if (!context.length) {
+      if (!context || context.length === 0) {
         return {
           text: ERROR_MESSAGES.NO_DATA,
           status: 'no_data',

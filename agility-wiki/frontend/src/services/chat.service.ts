@@ -14,7 +14,7 @@ export const chatService = {
       throw new Error(error?.message || 'Chat request failed');
     }
 
-    return res; 
+    return res;
   },
 
   async getSuggestions() {

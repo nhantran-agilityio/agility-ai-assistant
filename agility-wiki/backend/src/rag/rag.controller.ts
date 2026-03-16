@@ -1,67 +1,35 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  UseGuards,
-  Res,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
-import type { Response } from 'express';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
-import { RagService } from './rag.service';
-import { SuggestionService } from './services/suggestion.service';
-import { ChatRequestDto } from './dto/chat-request.dto';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { RagIngestAgent } from './agents/rag-ingest.agent';
+import { PineconeService } from './services/pinecone.service';
+import { IngestRequestDto } from './dto/ingest-request.dto';
 
 @ApiTags('Rag')
-@Controller('chat')
+@Controller('rag')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class RagController {
   constructor(
-    private readonly ragService: RagService,
-    private readonly suggestionService: SuggestionService,
+    private ingestAgent: RagIngestAgent,
+    private pineconeService: PineconeService,
   ) {}
 
-  @Post()
-  @ApiOperation({ summary: 'Ask chatbot' })
-  async chat(@Body() body: ChatRequestDto) {
-    const result = await this.ragService.ask(body.message, body.apiKey);
+  @Post('ingest')
+  @ApiOperation({ summary: 'Ingest employees into vector DB' })
+  async ingest(@Body() body: IngestRequestDto) {
+    await this.ingestAgent.ingestEmployees(body.apiKey);
 
     return {
-      text: result.text,
-      status: result.status,
+      status: 'ingest_completed',
     };
   }
 
-  // API streaming
-  @Post('stream')
-  @ApiOperation({ summary: 'Ask chatbot (stream response)' })
-  async streamChat(
-    @Body() body: ChatRequestDto,
-    @Res() res: Response,
-  ) {
-    res.setHeader('Content-Type', 'text/plain');
-    res.setHeader('Transfer-Encoding', 'chunked');
+  @Post('reset')
+  async reset() {
+    await this.pineconeService.resetIndex();
 
-    await this.ragService.stream(body.message, body.apiKey, res);
-  }
-
-  @Get('suggestions')
-  @ApiOperation({ summary: 'Get suggested questions' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of suggested questions',
-  })
-  getSuggestions() {
-    return {
-      suggestions: this.suggestionService.getSuggestions(),
-    };
+    return { success: true };
   }
 }

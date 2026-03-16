@@ -6,7 +6,6 @@ import { chatService } from '@/services/chat.service';
 import { ChatMessage } from '@/types/chat';
 import { STORAGE_KEY } from '@/constants/chat';
 
-
 export function useChat(apiKey?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +24,7 @@ export function useChat(apiKey?: string) {
   // save history
   useEffect(() => {
     if (messages.length === 0) return;
-  
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
   }, [messages]);
 
@@ -76,12 +75,9 @@ export function useChat(apiKey?: string) {
         aiText += chunk;
 
         setMessages((prev) =>
-          prev.map((m) =>
-            m.id === aiId ? { ...m, text: aiText } : m
-          )
+          prev.map((m) => (m.id === aiId ? { ...m, text: aiText } : m)),
         );
       }
-
     } catch (err: any) {
       if (err.name === 'AbortError') return;
 
@@ -103,6 +99,6 @@ export function useChat(apiKey?: string) {
     error,
     sendMessage,
     cancel,
-    resetChat
+    resetChat,
   };
 }
