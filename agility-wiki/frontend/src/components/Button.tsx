@@ -12,7 +12,7 @@ type ButtonVariant =
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
 
 const baseStyles =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-offset-2';
+  'inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-offset-2';
 
 const variantStyles: Record<ButtonVariant, string> = {
   default: 'bg-blue-500 text-white hover:bg-blue-400',

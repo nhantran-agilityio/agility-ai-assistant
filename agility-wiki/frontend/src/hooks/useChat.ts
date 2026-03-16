@@ -1,8 +1,11 @@
 'use client';
-import { useRef, useState } from 'react';
+
+import { useEffect, useRef, useState } from 'react';
 
 import { chatService } from '@/services/chat.service';
 import { ChatMessage } from '@/types/chat';
+import { STORAGE_KEY } from '@/constants/chat';
+
 
 export function useChat(apiKey?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -10,6 +13,26 @@ export function useChat(apiKey?: string) {
   const [error, setError] = useState<string | null>(null);
 
   const controllerRef = useRef<AbortController | null>(null);
+
+  // load history
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      setMessages(JSON.parse(saved));
+    }
+  }, []);
+
+  // save history
+  useEffect(() => {
+    if (messages.length === 0) return;
+  
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
+
+  const resetChat = () => {
+    setMessages([]);
+    localStorage.removeItem(STORAGE_KEY);
+  };
 
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
@@ -28,38 +51,37 @@ export function useChat(apiKey?: string) {
     setError(null);
 
     try {
-      const data = await chatService.ask(text, controller.signal, apiKey);
       const res = await chatService.ask(text, controller.signal, apiKey);
 
-        if (!res.body) {
-          throw new Error('No response body');
-        }
+      if (!res.body) {
+        throw new Error('No response body');
+      }
 
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
 
-        let aiText = '';
+      let aiText = '';
+      const aiId = crypto.randomUUID();
 
-        const aiId = crypto.randomUUID();
+      setMessages((prev) => [
+        ...prev,
+        { id: aiId, role: 'assistant', text: '' },
+      ]);
 
-        setMessages((prev) => [
-          ...prev,
-          { id: aiId, role: 'assistant', text: '' },
-        ]);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        const chunk = decoder.decode(value);
+        aiText += chunk;
 
-          const chunk = decoder.decode(value);
-          aiText += chunk;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiId ? { ...m, text: aiText } : m
+          )
+        );
+      }
 
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === aiId ? { ...m, text: aiText } : m
-            )
-          );
-        }
     } catch (err: any) {
       if (err.name === 'AbortError') return;
 
@@ -81,5 +103,6 @@ export function useChat(apiKey?: string) {
     error,
     sendMessage,
     cancel,
+    resetChat
   };
 }

@@ -16,7 +16,7 @@ export default function Chat() {
 	const [suggestions, setSuggestions] = useState<string[]>([]);
 
 	const { apiKey } = useOpenAIKey() || {};
-	const { messages, loading, error, sendMessage, cancel } =
+	const { messages, loading, error, sendMessage, cancel, resetChat } =
 		useChat(apiKey || undefined);
 
 	const endRef = useRef<HTMLDivElement>(null);
@@ -59,14 +59,14 @@ export default function Chat() {
 						<div
 							key={msg.id}
 							className={`flex ${msg.role === 'user'
-									? 'justify-end'
-									: 'justify-start'
+								? 'justify-end'
+								: 'justify-start'
 								}`}
 						>
 							<div
 								className={`max-w-[85%] md:max-w-[70%] px-4 py-3 rounded-lg text-sm leading-relaxed ${msg.role === 'user'
-										? 'bg-slate-900 text-white'
-										: 'bg-gray-200 text-gray-800'
+									? 'bg-slate-900 text-white'
+									: 'bg-gray-200 text-gray-800'
 									}`}
 							>
 								{msg.text}
@@ -112,6 +112,12 @@ export default function Chat() {
 						className="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
 					>
 						{loading ? 'Stop' : 'Send'}
+					</Button>
+
+					<Button
+						className="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
+						onClick={resetChat} disabled={messages.length === 0}>
+						Clear chat history
 					</Button>
 				</form>
 			</div>
