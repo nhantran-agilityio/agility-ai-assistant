@@ -1,21 +1,38 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { chatService } from '../services/chat';
+import { useEffect, useRef, useState } from 'react';
 
-export type ChatMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  text: string;
-};
+import { chatService } from '@/services/chat.service';
+import { ChatMessage } from '@/types/chat';
+import { STORAGE_KEY } from '@/constants/chat';
 
 export function useChat(apiKey?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [needHuman, setNeedHuman] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   const controllerRef = useRef<AbortController | null>(null);
+
+  // load history
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      setMessages(JSON.parse(saved));
+    }
+  }, []);
+
+  // save history
+  useEffect(() => {
+    if (messages.length === 0) return;
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
+
+  const resetChat = () => {
+    setMessages([]);
+    localStorage.removeItem(STORAGE_KEY);
+  };
 
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
@@ -31,34 +48,40 @@ export function useChat(apiKey?: string) {
 
     setMessages((prev) => [...prev, userMessage]);
     setLoading(true);
+    setIsStreaming(false)
     setError(null);
 
     try {
-      const data = await chatService.ask(text, controller.signal, apiKey);
+      const res = await chatService.ask(text, controller.signal, apiKey);
 
-      const aiMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        text: data.text || '',
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-
-      // handle backend status
-      if (data.status === 'no_data') {
-        setNeedHuman(true);
+      if (!res.body) {
+        throw new Error('No response body');
       }
 
-      if (data.status === 'ai_error') {
-        setError('AI service is currently unavailable.');
-      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
 
-      if (data.status === 'rate_limit') {
-        setError('Too many requests. Please try again later.');
-      }
+      let aiText = '';
+      const aiId = crypto.randomUUID();
 
-      if (data.status === 'db_error') {
-        setError('Database error occurred while retrieving information.');
+      setMessages((prev) => [
+        ...prev,
+        { id: aiId, role: 'assistant', text: '' },
+      ]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+         if (!isStreaming) {
+            setIsStreaming(true); // start streaming
+          }
+        aiText += chunk;
+
+        setMessages((prev) =>
+          prev.map((m) => (m.id === aiId ? { ...m, text: aiText } : m)),
+        );
       }
     } catch (err: any) {
       if (err.name === 'AbortError') return;
@@ -79,8 +102,9 @@ export function useChat(apiKey?: string) {
     messages,
     loading,
     error,
-    needHuman,
     sendMessage,
     cancel,
+    resetChat,
+    isStreaming
   };
 }

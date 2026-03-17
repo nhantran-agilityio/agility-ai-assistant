@@ -10,7 +10,7 @@ export default function Suggestions({ suggestions, onSelect }: Props) {
         <button
           key={i}
           onClick={() => onSelect(suggestion)}
-          className="text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-2 rounded-lg"
+          className="cursor-pointer text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-2 rounded-lg"
         >
           {suggestion}
         </button>
