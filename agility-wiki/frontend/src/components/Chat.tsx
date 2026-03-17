@@ -16,7 +16,7 @@ export default function Chat() {
 	const [suggestions, setSuggestions] = useState<string[]>([]);
 
 	const { apiKey } = useOpenAIKey() || {};
-	const { messages, loading, error, sendMessage, cancel, resetChat } =
+	const { messages, loading, error, sendMessage, cancel, resetChat, isStreaming } =
 		useChat(apiKey || undefined);
 
 	const endRef = useRef<HTMLDivElement>(null);
@@ -75,7 +75,7 @@ export default function Chat() {
 					))}
 
 					{/* typing */}
-					{loading && (
+					{loading && !isStreaming &&(
 						<div className="flex justify-start">
 							<div className="px-4 py-3 rounded-lg">
 								<TypingIndicator />

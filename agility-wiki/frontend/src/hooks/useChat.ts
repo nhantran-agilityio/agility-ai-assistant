@@ -10,6 +10,7 @@ export function useChat(apiKey?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   const controllerRef = useRef<AbortController | null>(null);
 
@@ -47,6 +48,7 @@ export function useChat(apiKey?: string) {
 
     setMessages((prev) => [...prev, userMessage]);
     setLoading(true);
+    setIsStreaming(false)
     setError(null);
 
     try {
@@ -72,6 +74,9 @@ export function useChat(apiKey?: string) {
         if (done) break;
 
         const chunk = decoder.decode(value);
+         if (!isStreaming) {
+            setIsStreaming(true); // start streaming
+          }
         aiText += chunk;
 
         setMessages((prev) =>
@@ -100,5 +105,6 @@ export function useChat(apiKey?: string) {
     sendMessage,
     cancel,
     resetChat,
+    isStreaming
   };
 }
