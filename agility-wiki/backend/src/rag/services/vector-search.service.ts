@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Pinecone, Index } from '@pinecone-database/pinecone';
 import { EmbeddingService } from './embedding.service';
 import { PrismaService } from '@/database/prisma.service';
 import { normalize } from '@/core/helpers/normalize.utils';
@@ -8,9 +7,6 @@ import { PineconeService } from './pinecone.service';
 @Injectable()
 export class VectorSearchService {
   private readonly logger = new Logger(VectorSearchService.name);
-
-  private pinecone: Pinecone;
-  private index: Index;
 
   constructor(
     private prisma: PrismaService,
@@ -38,27 +34,17 @@ export class VectorSearchService {
       );
 
       if (!result.matches?.length) return [];
-
-      const teamCodes = [
-        ...new Set(
-          result.matches
-            .filter((m) => m.score && m.score > 0.25)
-            .map((m) => m.metadata?.tea)
-            .filter((code): code is string => Boolean(code))
-        ),
-      ];
-
-      if (!teamCodes.length) return [];
-
-      const employees = await this.prisma.employee.findMany({
+      const emails = result.matches
+        .filter(m => m.score && m.score > 0.25)
+        .slice(0, 1)
+        .map(m => m.metadata?.email)
+        .filter((email): email is string => !!email);
+      
+        const employees = await this.prisma.employee.findMany({
         where: {
-          team: {
-            code: {
-              in: teamCodes,
-            },
-          },
+          email: { in: emails }
         },
-        include: { team: true },
+        include: { team: true }
       });
 
       return normalize(employees);
