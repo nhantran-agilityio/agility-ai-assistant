@@ -41,7 +41,10 @@ export class PrismaSearchService {
       });
     }
 
-    if (!where.OR.length) return [];
+    // if (!where.OR.length) return [];
+    if (!plan.name && !plan.job_title && !plan.team && !plan.responsibility) {
+      return [];
+    }
 
     try {
       const employees = await this.prisma.employee.findMany({

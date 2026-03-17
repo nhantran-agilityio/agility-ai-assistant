@@ -21,27 +21,21 @@ export class QueryPlannerService {
           {
             role: 'system',
             content: `
-              You are a query planner for an employee directory database.
+                You are a query planner.
 
-              Extract structured fields from the question.
+                Extract:
+                - name
+                - job_title
+                - team
+                - responsibility
 
-              Available fields:
-              - name
-              - job_title
-              - team
-              - responsibility
+                Examples:
+                - who handles salary → { "responsibility": "salary" }
+                - who manages payroll → { "responsibility": "payroll" }
+                - who handles compensation → { "responsibility": "compensation" }
+                - who is Nhàn → { "name": "Nhàn" }
 
-              Return JSON in this format:
-
-              {
-                "name": "",
-                "job_title": "",
-                "team": "",
-                "responsibility": ""
-              }
-
-              Only include fields if they appear in the question.
-              Return valid JSON only.
+                Return JSON only.
               `,
           },
           {

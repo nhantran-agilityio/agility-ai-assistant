@@ -8,6 +8,7 @@ import { RagResponse } from './interfaces/query-plan.interface';
 import { ERROR_MESSAGES } from '@/core/constants/error';
 import { VectorSearchTool } from './tools/vector-search.tool';
 import { PrismaSearchTool } from './tools/prisma-search.tool';
+import { streamToResponse } from '@/core/helpers/stream-openai.util';
 
 @Injectable()
 export class RagService {
@@ -27,7 +28,8 @@ export class RagService {
     const start = Date.now();
 
     const plan = await this.planner.planQuery(question, apiKey);
-
+   
+    this.logger.log(`Final responsibility: ${plan.responsibility}`);
     this.logger.log(`Query plan: ${JSON.stringify(plan)}`);
 
     let context = await this.prismaSearchTool.search(plan);
@@ -90,14 +92,33 @@ export class RagService {
             role: 'system',
             content: `
               You are an internal company assistant.
+              You MUST answer using the provided employee data.
 
-              Use ONLY the provided context to answer.
+              If the question is about responsibilities (salary, IT support, etc):
+              - Find the employee whose "Team Responsibilities" best match the question
 
-              If the answer is not in the context, say you cannot find the information in the company database.
+              If multiple employees match the question:
+              - Return ALL relevant employees     
 
+              DO NOT say "I cannot find" if there is any relevant information.
+
+              Return EXACTLY in this format:
+
+              Name: John Doe
+              Email: john@example.com
+              Phone: 123456
+              Job Title: HR
+              Room: A1
+
+              Name: Jane Smith
+              Email: jane@example.com
+              Phone: 987654
+              Job Title: HR
+              Room: B2
+             
               Context:
               ${contextText}
-              `,
+              `
           },
           {
             role: 'user',
@@ -106,20 +127,7 @@ export class RagService {
         ],
       });
 
-      // handle client disconnect
-      res.on('close', () => {
-        this.logger.warn('Client disconnected from stream');
-      });
-
-      for await (const chunk of stream) {
-        const token = chunk.choices?.[0]?.delta?.content;
-
-        if (token) {
-          res.write(token);
-        }
-      }
-
-      res.end();
+      await streamToResponse(stream, res);
     } catch (error: any) {
       this.logger.error('Streaming RAG failed', error);
 

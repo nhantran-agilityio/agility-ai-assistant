@@ -10,6 +10,9 @@ export function compressContext(context: EmployeeContext[]) {
         Email: ${e.email}
         Phone: ${e.phone}
         Room: ${e.room}
+        Team Responsibilities: ${e.team?.description ?? ''}
+        Keywords:
+salary, payroll, compensation, benefits, IT support, laptop, computer
         `,
     )
     .join('\n');

@@ -19,7 +19,7 @@ export class AnswerGeneratorService {
     }
 
     const contextText = compressContext(context);
-
+    
     try {
       const completion = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
@@ -30,7 +30,13 @@ export class AnswerGeneratorService {
             content: `
 								You are an internal company assistant.
 
-								Use ONLY the employee data provided.
+                You MUST answer using the provided employee data.
+
+If the question is about responsibilities (salary, IT support, etc):
+- Find the employee whose "Team Responsibilities" best match the question
+- ALWAYS return the most relevant employee
+
+DO NOT say "I cannot find" if there is any relevant information.
 
 								Return the answer in the following format:
 								- Name

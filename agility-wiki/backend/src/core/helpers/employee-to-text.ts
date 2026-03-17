@@ -1,30 +1,41 @@
-export function employeeToText(emp) {
+// Transform employee → embedding text
+export function employeeToText(emp: any) {
   return `
-Employee Profile
+      Employee Profile:
 
-Full Name: ${emp.name}
-Email: ${emp.email}
-Phone: ${emp.phone ?? 'Not available'}
+      Full Name: ${emp.name}
+      Email: ${emp.email}
+      Phone: ${emp.phone ?? 'Not available'}
+      Date of Birth: ${emp.date_of_birth ?? 'Not available'}
 
-Job Title: ${emp.job_title ?? 'Unknown'}
-Team: ${emp.team?.name ?? 'Not assigned'}
-Team Code: ${emp.team?.code ?? 'N/A'}
+      Team: ${emp.team?.name ?? 'Not assigned'}
+      Team Code: ${emp.team?.code ?? 'N/A'}
+      Team Description: ${emp.team?.description ?? 'No description'}
 
-Work Location: ${emp.work_location ?? 'Not specified'}
-Employment Status: ${emp.status ?? 'Unknown'}
+      Work Location: ${emp.work_location ?? 'Not specified'}
+      Employment Status: ${emp.status ?? 'Unknown'}
+      This employee works as ${emp.job_title} in the ${emp.team?.name} team.
+      The team is responsible for: ${emp.team?.description}.
 
-This employee works as ${emp.job_title} in the ${emp.team?.name} team.
+      If someone has issues such as:
+      - Laptop broken
+      - Hardware failure
+      - Device setup
+      - System troubleshooting
+      - IT support request
+      They should contact this employee if they belong to this team.
 
-Team Responsibilities:
-${emp.team?.description ?? 'No description'}
+      This employee works on DevOps related tasks such as:
+      - CI/CD pipelines
+      - deployment automation
+      - cloud infrastructure
+      - cloud systems
+      - server infrastructure
+      - system reliability
+      - monitoring and logging
+      - container orchestration
+      - DevOps operations
 
-This person may be contacted for topics related to:
-- ${emp.job_title}
-- ${emp.team?.name}
-- DevOps
-- CI/CD pipelines
-- deployment automation
-- infrastructure
-- system operations
-`;
+      Contact this employee for DevOps, infrastructure, deployment, or cloud related issues.
+      `;
 }

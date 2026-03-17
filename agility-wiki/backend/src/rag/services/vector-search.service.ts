@@ -19,7 +19,6 @@ export class VectorSearchService {
   ) {}
 
   async vectorSearch(query: string, apiKey: string) {
-    console.log('VECTOR SEARCH CALLED', query);
     try {
       const vector = await this.embeddingService.embedQuery(query, apiKey);
       const index = this.pineconeService.getIndex();
@@ -43,9 +42,9 @@ export class VectorSearchService {
       const teamCodes = [
         ...new Set(
           result.matches
-            .filter((m) => m.score && m.score > 0.65)
-            .map((m) => m.metadata?.team_code)
-            .filter((c): c is string => typeof c === 'string'),
+            .filter((m) => m.score && m.score > 0.25)
+            .map((m) => m.metadata?.tea)
+            .filter((code): code is string => Boolean(code))
         ),
       ];
 
