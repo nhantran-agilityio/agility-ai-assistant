@@ -11,7 +11,7 @@ function excelDateToJSDate(serial: number) {
 
 async function main() {
   // const workbook = XLSX.readFile('data/agility_employee.xlsx');
-  const filePath = path.join(process.cwd(), "data", "agility_employee.xlsx");
+  const filePath = path.join(process.cwd(), 'data', 'agility_employee.xlsx');
 
   const workbook = XLSX.readFile(filePath);
   // ===== TEAM SHEET =====

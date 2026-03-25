@@ -1,40 +1,35 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { RagService } from './rag.service';
-import { SuggestionService } from './services/suggestion.service';
-import { ChatRequestDto } from './dto/chat-request.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { RagIngestAgent } from './agents/rag-ingest.agent';
+import { PineconeService } from './services/pinecone.service';
+import { IngestRequestDto } from './dto/ingest-request.dto';
 
 @ApiTags('Rag')
-@Controller('chat')
+@Controller('rag')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class RagController {
   constructor(
-    private readonly ragService: RagService,
-    private readonly suggestionService: SuggestionService,
+    private ingestAgent: RagIngestAgent,
+    private pineconeService: PineconeService,
   ) {}
 
-  @Post()
-  @ApiOperation({ summary: 'Ask chatbot' })
-  async chat(@Body() body: ChatRequestDto) {
-    const result = await this.ragService.ask(body.message, body.apiKey);
+  @Post('ingest')
+  @ApiOperation({ summary: 'Ingest employees into vector DB' })
+  async ingest(@Body() body: IngestRequestDto) {
+    await this.ingestAgent.ingestEmployees(body.apiKey);
 
     return {
-      text: result.text,
-      status: result.status,
+      status: 'ingest_completed',
     };
   }
 
-  @Get('suggestions')
-  @ApiOperation({ summary: 'Get suggested questions' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of suggested questions',
-  })
-  getSuggestions() {
-    return {
-      suggestions: this.suggestionService.getSuggestions(),
-    };
+  @Post('reset')
+  async reset() {
+    await this.pineconeService.resetIndex();
+
+    return { success: true };
   }
 }

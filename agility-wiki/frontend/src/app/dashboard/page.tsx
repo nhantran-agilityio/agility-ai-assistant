@@ -1,14 +1,14 @@
-import { ApiKeyModal } from '@/src/components/ApiKeyModal';
-import { OpenAIKeyProvider } from '../providers/provider';
-import ChatbotPopup from '@/src/components/ChatPopup';
+import { OpenAIKeyProvider } from '../../providers/openai-provider';
+
+import Chat from '@/components/Chat';
+import { ApiKeyModal } from '@/components/ApiKeyModal';
 
 export default function Dashboard() {
   return (
     <OpenAIKeyProvider>
-      <div className="flex justify-center pt-10">
-        <h1 className="size">Agility Wiki Assistant</h1>
+      <div className="flex justify-center pt-10 h-screen bg-gray-400 flex flex-col items-center pt-8">
         <ApiKeyModal />
-        <ChatbotPopup />
+        <Chat />
       </div>
     </OpenAIKeyProvider>
   );
